@@ -1,0 +1,15 @@
+{
+  "name": "home-made-fan",
+  "version": "1.0.0",
+  "description": "Control Fan with AArduino",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Seven Kids Code",
+  "license": "ISC",
+  "dependencies": {
+    "serialport": "^12.0.0",
+    "socket.io": "^4.7.5"
+  }
+}

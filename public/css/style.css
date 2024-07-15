@@ -1,0 +1,43 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+h1 {
+    margin-bottom: 20px;
+}
+
+#etat-ventilateur, #controle-vitesse, #statistiques {
+    margin-bottom: 20px;
+}
+
+button {
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+#statistiques p {
+    margin-bottom: 5px;
+}
+
+.ventilateur-container {
+    margin: 50px auto;
+}
+
+.ventilateur-img {
+    animation: rotation 2s linear infinite;
+    animation-play-state: paused;
+    width: 200px;
+}
+
+@keyframes rotation {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}

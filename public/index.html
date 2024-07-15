@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Made Fan</title>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js'></script>
+
+    <style>
+        * {
+            transition: 0.3s ease-in-out;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        .card {
+            margin: 100px auto 0 auto;
+            border: 1px solid #00000042;
+            width: 390px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 1px black;
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            font-size: 30px;
+        }
+        
+        #etat-ventilateur, #controle-vitesse, #statistiques {
+            margin-bottom: 20px;
+        }
+
+        #etat-ventilateur p {
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        
+        button {
+            padding: 8px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: 2px solid #4CAF50;
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: bold;
+            text-transform: uppercase;
+            box-shadow: 1px 1px 2px #000000c7;
+        }
+        
+        button:hover {
+            background-color: white;
+            color: #4CAF50;
+        }
+
+        button#bouton-allumage {
+            background-color: #a52a2a;
+            border-color: #a52a2a;
+        }
+
+
+        button#bouton-allumage:hover {
+            color: #a52a2a;
+            background-color: white;
+        }
+        
+        #statistiques p {
+            margin-bottom: 5px;
+        }
+        
+        .ventilateur-container {
+            margin: 50px auto;
+        }
+        
+        .ventilateur-img {
+            animation: rotation 2s linear infinite;
+            animation-play-state: paused;
+            width: 200px;
+        }
+        
+        @keyframes rotation {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }        
+    </style>
+
+</head>
+<body>
+
+    <div class="card">
+        <h1>Home Made Fan</h1>
+
+        <div id="etat-ventilateur">
+            <p>Ventilateur éteint</p>
+            <button id="bouton-allumage">Allumer</button>
+        </div>
+
+        <div class="ventilateur-container">
+            <img class="ventilateur-img" src="/public/images/ventilation-stop.png" alt="">
+        </div>
+
+        <div id="controle-vitesse">
+            <button id="bouton-vitesse-1">Vitesse 1</button>
+            <button id="bouton-vitesse-2">Vitesse 2</button>
+            <button id="bouton-vitesse-3">Vitesse 3</button>
+        </div>
+
+        <div id="statistiques">
+            <p id="time">Heure d'allumage: 00:00</p>
+            <p id="speed">Niveau de vitesse: 0</p>
+        </div>
+    </div>
+
+    <script>
+        let etatVentilateur = false; // Variable pour stocker l'état du ventilateur (allumé ou éteint)
+        let vitesseVentilateur = 0; // Variable pour stocker la vitesse du ventilateur (0, 1, 2 ou 3)
+        let animationEnCours = false; // Variable pour stocker l'état de l'animation
+        const statistiques = document.getElementById('statistiques');
+        const ventilateurImg = document.querySelector('.ventilateur-img');
+
+        const socket = io();
+
+        // Fonction pour allumer le ventilateur
+        function allumerVentilateur() {
+            if (!etatVentilateur) {
+
+                etatVentilateur = true;
+                const fanData = document.getElementById('etat-ventilateur');
+                fanData.firstElementChild.textContent = 'Ventilateur allumé';
+                fanData.lastElementChild.textContent = 'ETEINDRE';
+
+                // Démarrer l'animation si elle n'est pas déjà en cours
+                if (!animationEnCours) {
+                    changerVitesse(0);
+                    demarrerAnimation();
+                    animationEnCours = true;
+                }
+
+                const date = new Date();
+                statistiques.firstElementChild.textContent = 'Heure d\'allumage: ' + date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds();
+                statistiques.lastElementChild.textContent = 'Niveau de vitesse: 1';
+                
+                socket.emit('allumer', {'status': 5});
+
+            } else {
+                eteindreVentilateur();
+            }
+        }
+
+        // Fonction pour éteindre le ventilateur
+        function eteindreVentilateur() {
+
+            if (etatVentilateur) {
+
+                etatVentilateur = false;
+                const fanData = document.getElementById('etat-ventilateur');
+                fanData.firstElementChild.textContent = 'Ventilateur éteint';
+                fanData.lastElementChild.textContent = 'ALLUMER';
+                vitesseVentilateur = 0; // Réinitialiser la vitesse
+                statistiques.firstElementChild.textContent = 'Heure d\'allumage: 00:00:00';
+                statistiques.lastElementChild.textContent = 'Niveau de vitesse: 0';
+
+                socket.emit('allumer', {'status': 5});
+
+                // Arrêter l'animation si elle est en cours
+                if (animationEnCours) {
+
+                    arreterAnimation();
+                    animationEnCours = false;
+                }
+            }
+        }
+
+        // Fonction pour changer de vitesse du ventilateur
+        function changerVitesse(nouvelleVitesse) {
+
+            if (etatVentilateur) {
+
+                if (nouvelleVitesse >= 0 && nouvelleVitesse <= 3) {
+
+                    vitesseVentilateur = nouvelleVitesse;
+                    document.getElementById('statistiques').children[1].textContent = `Niveau de vitesse: ${vitesseVentilateur + 1}`;
+
+                    // Mettre à jour la propriété CSS animation-duration
+                    console.log(`${2 / (nouvelleVitesse + 3)}s`);
+                    ventilateurImg.style.animationDuration = `${2 / (nouvelleVitesse + 3)}s`;
+
+                    socket.emit('allumer', { "status": nouvelleVitesse + 1 });
+
+                } else {
+
+                    alert('Vitesse invalide. Veuillez choisir une vitesse entre 0 et 3.');
+                }
+            } else {
+
+                alert('Veuillez d\'abord allumer le ventilateur avant de changer de vitesse.');
+            }
+        }
+
+        // Fonction pour démarrer l'animation
+        function demarrerAnimation() {
+            ventilateurImg.src = '/public/images/ventilation-run.png';
+            ventilateurImg.style.animationPlayState = 'running';
+        }
+
+        // Fonction pour arrêter l'animation
+        function arreterAnimation() {
+            ventilateurImg.src = '/public/images/ventilation-stop.png';
+            ventilateurImg.style.animationPlayState = 'paused';
+        }
+
+        // Événements pour les boutons
+        document.getElementById('bouton-allumage').addEventListener('click', allumerVentilateur);
+        document.getElementById('bouton-vitesse-1').addEventListener('click', () => changerVitesse(0));
+        document.getElementById('bouton-vitesse-2').addEventListener('click', () => changerVitesse(1));
+        document.getElementById('bouton-vitesse-3').addEventListener('click', () => changerVitesse(2));
+    </script>
+</body>
+</html>
